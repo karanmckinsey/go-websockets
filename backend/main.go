@@ -15,12 +15,12 @@ var upgrader = websocket.Upgrader{
 }
 
 func serveWS(w http.ResponseWriter, r *http.Request) {
-	// upgrade the http connection to websocket connection 
+	// upgrade the http connection to websocket connection
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
-	// continously listen for new incoming messages 
+	// continously listen for new incoming messages
 	listener(ws)
 }
 
@@ -28,6 +28,7 @@ func setupRoutes() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Welcome!")
 	})
+	http.HandleFunc("/ws", serveWS)
 }
 
 func main() {
