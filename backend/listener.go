@@ -6,6 +6,7 @@ import (
 )
 
 func listener(conn *websocket.Conn) {
+
 	for {
 		_, p, err := conn.ReadMessage()
 		if err != nil {
@@ -14,4 +15,5 @@ func listener(conn *websocket.Conn) {
 		}
 		fmt.Println("Message Received", string(p))
 	}
+	
 }
