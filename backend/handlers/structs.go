@@ -4,7 +4,7 @@ import "github.com/gorilla/websocket"
 
 // Socket events structure
 type SocketEvent struct {
-	EventName 		string 				`json:"eventName"`
+	EventName 		string 			`json:"eventName"`
 	EventPayload 	interface{}		`json:"eventPayload"` 
 }
 

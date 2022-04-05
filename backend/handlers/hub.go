@@ -9,6 +9,7 @@ func NewHub() *Hub {
 	}
 }
 
+// Starts listening for register and unregister channels 
 func (hub *Hub) Run() {
 	for {
 		select {

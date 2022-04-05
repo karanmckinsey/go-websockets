@@ -1,8 +1,10 @@
-package main 
+package main
 
 import (
 	"fmt"
+	"go-chat-app/handlers"
 	"net/http"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -29,6 +31,8 @@ func setupRoutes() {
 		fmt.Fprintf(w, "Welcome!")
 	})
 	http.HandleFunc("/ws", serveWS)
+	hub := handlers.NewHub()
+	go hub.Run()
 }
 
 func main() {
