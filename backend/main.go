@@ -27,12 +27,15 @@ func serveWS(w http.ResponseWriter, r *http.Request) {
 }
 
 func setupRoutes() {
+	hub := handlers.NewHub()
+	go hub.Run()
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Welcome!")
 	})
 	http.HandleFunc("/ws", serveWS)
-	hub := handlers.NewHub()
-	go hub.Run()
+	// http.HandleFunc("/ws/{userId}", handlers.ConnectSocket)
+	
 }
 
 func main() {

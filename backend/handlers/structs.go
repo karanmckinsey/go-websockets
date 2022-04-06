@@ -10,7 +10,7 @@ type SocketEvent struct {
 
 // Client is an interface between the websocket and the hub
 type Client struct {
-	hub 		*Client
+	hub 		*Hub
 	wsConn 		*websocket.Conn
 	send 		chan SocketEvent
 	userId 		string
