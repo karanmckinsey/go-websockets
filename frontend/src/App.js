@@ -1,36 +1,41 @@
 import React from 'react';
 
 const App = () => {
+	
 	const [ state, setState ] = React.useState({
 		username: "",
 		message: "",
 	});
+
 	const submitHandler = (e) => {
 		e.preventDefault();
 		console.log(state)
 	}
 	return (
-		<form id="input-form" className="form-inline container" onSubmit={submitHandler}>
-			<div className="form-group">
-				<input
-					type="text"
-					className="form-control"
-					placeholder="Enter username"
-					value={state.username}
-					onChange={(e) => setState(old => ({ ...old, username: e.target.value }))}
-				/>
-			</div>
-			<div className="form-group">
-				<input
-					type="text"
-					className="form-control"
-					placeholder="Enter chat text here"
-					value={state.message}
-					onChange={(e) => setState(old => ({ ...old, message: e.target.value }))}
-				/>
-			</div>
-			<button className="btn btn-primary" type="submit">Send</button>
-  		 </form>
+		<div className="container my-5 py-5">
+			<h3>Go Chat!</h3>
+			<form id="input-form" className=" my-4" onSubmit={submitHandler}>
+				<div className="form-group">
+					<input
+						type="text"
+						className="form-control"
+						placeholder="Enter username"
+						value={state.username}
+						onChange={(e) => setState(old => ({ ...old, username: e.target.value }))}
+					/>
+				</div>
+				<div className="form-group">
+					<input
+						type="text"
+						className="form-control"
+						placeholder="Enter chat text here"
+						value={state.message}
+						onChange={(e) => setState(old => ({ ...old, message: e.target.value }))}
+					/>
+				</div>
+				<button className="btn btn-primary btn-block" type="submit">Send</button>
+	  		 </form>
+  		 </div>
 	)
 }
 
