@@ -49,9 +49,11 @@ func main() {
 		fmt.Fprintf(w, "Hello World")
 	})
 	// To handle new websocket connection 
-	http.HandleFunc("/websocket", handlers.HandleConnections)
+	h := handlers.NewSocketHandlers(&Upgrader, Clients, Broadcaster)
+	http.HandleFunc("/websocket", h.HandleConnections)
 	// To handle messages through a subroutine 
-	go services.HandleMessages()
+	s := services.NewSocketService(Broadcaster, Clients)
+	go s.HandleMessages()
 
 	log.Printf("Server starting at :%v", port)
 	http.ListenAndServe(fmt.Sprintf(":%v", port), r)
