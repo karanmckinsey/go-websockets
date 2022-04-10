@@ -47,6 +47,8 @@ func (s *SocketHandlers) HandleConnections(w http.ResponseWriter, r *http.Reques
 			delete(s.clients, ws)
 			break 
 		} else {
+			// Broadcast the message to the broadcast channel
+			log.Println("Broadcasting the message", chatMessage)
 			s.broadcaster <- chatMessage
 		}
 
