@@ -30,7 +30,7 @@ func (s *SocketService) HandleMessages() {
 	}
 }
 
-func  messageClients(msg core.ChatMessage, clients map[*websocket.Conn]bool) {
+func messageClients(msg core.ChatMessage, clients map[*websocket.Conn]bool) {
 	for client := range clients {
 		if err := client.WriteJSON(msg); err != nil && !safeError(err) {
 			log.Printf("Error: %v", err)
@@ -38,6 +38,8 @@ func  messageClients(msg core.ChatMessage, clients map[*websocket.Conn]bool) {
 			client.Close()
 			// Delete the client from the map 
 			delete(clients, client)
+		} else {
+			log.Println("Message sent to all clients", msg)
 		}
 	}
 }
