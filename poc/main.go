@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"poc/handlers"
+	"poc/services"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
@@ -15,6 +17,34 @@ import (
 var rdb *redis.Client
 
 var ctx = context.Background()
+
+
+
+func main() {
+	// environment variables config 
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Environment variable not loaded")
+	}
+	var port string = os.Getenv("PORT")
+	var redisUrl string = os.Getenv("REDIS_URL")
+
+	// redis config 
+	initiateRedisClient(redisUrl)
+	r := mux.NewRouter()
+
+	// Routes 
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello World")
+	})
+	// To handle new websocket connection 
+	http.HandleFunc("/websocket", handlers.HandleConnections)
+	// To handle messages through a subroutine 
+	go services.HandleMessages()
+
+	log.Printf("Server starting at :%v", port)
+	http.ListenAndServe(fmt.Sprintf(":%v", port), r)
+}
+
 
 func initiateRedisClient(url string) {
 	rdb = redis.NewClient(&redis.Options{
@@ -27,24 +57,5 @@ func initiateRedisClient(url string) {
 	} else {
 		log.Println("Connected to REDIS successfully!")
 	}
-}
-
-func main() {
-	// environment variables config 
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Environment variable not loaded")
-	}
-	var port string = os.Getenv("PORT")
-	var redisUrl string = os.Getenv("REDIS_URL")
-
-	// redis config 
-	initiateRedisClient(redisUrl)
-
-	r := mux.NewRouter()
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello World")
-	})
-	log.Printf("Server starting at :%v", port)
-	http.ListenAndServe(fmt.Sprintf(":%v", port), r)
 }
 
