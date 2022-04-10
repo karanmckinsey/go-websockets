@@ -7,8 +7,7 @@ import (
 
 	"github.com/gorilla/websocket"
 )
-var clients 	= make(map[*websocket.Conn]bool)
-var broadcaster = make(chan core.ChatMessage)
+
 // To "upgrade" incoming http requests to websocket reqs
 var upgrader 	= websocket.Upgrader{
 	ReadBufferSize: 1024,
@@ -28,15 +27,6 @@ func NewSocketHandlers(
 	return &SocketHandlers{clients, broadcaster}
 }
 
-func WsHandler(w http.ResponseWriter, r *http.Request) {
-	ws, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-			log.Fatal(err)
-	}
-
-	// register client
-	clients[ws] = true	
-}
 
 /*
 	Whenever the users makes a new connection:
@@ -46,7 +36,7 @@ func WsHandler(w http.ResponseWriter, r *http.Request) {
 
 */
 
-func HandleConnection(w http.ResponseWriter, r *http.Request) {
+func (s *SocketHandlers) HandleConnection(w http.ResponseWriter, r *http.Request) {
 	// Create a new WS connection out of the incoming request
 	log.Println("Upgrading the request to ws request")
 	ws, err := upgrader.Upgrade(w,r,nil)
@@ -56,19 +46,19 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	// defer ws.Close()
 	// Set the currect WS as true in the map
 	log.Println("Creating a map entry for the new connection")
-	clients[ws] = true 
+	s.clients[ws] = true 
 	// Send the message payload received with the WS connection 
 	for {
 		var chatMessage core.ChatMessage 
 		if err := ws.ReadJSON(&chatMessage); err != nil {
 			// Delete the current client from the map in case of an error 
-			delete(clients, ws)
+			delete(s.clients, ws)
 			break 
 		} else {
 			if chatMessage.Message != "" {
 				// Broadcast the message to the broadcast channel
 				log.Println("Broadcasting the message", chatMessage)
-				broadcaster <- chatMessage
+				s.broadcaster <- chatMessage
 			}
 		}
 

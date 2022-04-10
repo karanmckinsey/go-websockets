@@ -42,10 +42,10 @@ func main() {
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Welcome!")
 	}).Methods("GET")
+
 	// To handle new websocket connection 
-	// h := handlers.NewSocketHandlers(clients, broadcaster)
-	r.HandleFunc("/ws", handlers.HandleConnection)
-	// r.HandleFunc("/ws", handlers.WsHandler)
+	h := handlers.NewSocketHandlers(clients, broadcaster)
+	r.HandleFunc("/ws", h.HandleConnection)
 	// To handle messages through a subroutine 
 	s := services.NewSocketService(broadcaster, clients)
 	go s.HandleMessages()
