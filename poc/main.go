@@ -6,11 +6,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"poc/core"
 	"poc/handlers"
 	"poc/services"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
 )
 
@@ -18,6 +20,16 @@ var rdb *redis.Client
 
 var ctx = context.Background()
 
+// To "upgrade" incoming http requests to websocket reqs
+var Upgrader 	= websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return false
+	},
+}
+// Map of all the currently active clients (websocket)
+var Clients 	= make(map[*websocket.Conn]bool)
+// Single channel to send and receive ChatMessage data 
+var Broadcaster = make(chan core.ChatMessage)
 
 
 func main() {
