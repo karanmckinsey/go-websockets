@@ -9,8 +9,17 @@ const App = () => {
 
 	const submitHandler = (e) => {
 		e.preventDefault();
-		console.log(state)
+		createSocketConnection();
 	}
+
+
+	const createSocketConnection = () => {
+		const ws = new WebSocket("ws://127.0.0.1:8000/ws")
+		console.log({ ws })
+		// ws.send({ ...state })
+	}
+
+
 	return (
 		<div className="container my-5 py-5">
 			<h3>Go Chat!</h3>

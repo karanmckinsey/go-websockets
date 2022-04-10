@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"go-chat-app/handlers"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -17,6 +18,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func serveWS(w http.ResponseWriter, r *http.Request) {
+	log.Println("Converting HTTP to WS")
 	// upgrade the http connection to websocket connection
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

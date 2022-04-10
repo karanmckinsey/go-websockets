@@ -20,16 +20,10 @@ var rdb *redis.Client
 
 var ctx = context.Background()
 
-// To "upgrade" incoming http requests to websocket reqs
-var Upgrader 	= websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return false
-	},
-}
 // Map of all the currently active clients (websocket)
-var Clients 	= make(map[*websocket.Conn]bool)
+var clients 	= make(map[*websocket.Conn]bool)
 // Single channel to send and receive ChatMessage data 
-var Broadcaster = make(chan core.ChatMessage)
+var broadcaster = make(chan core.ChatMessage)
 
 
 func main() {
@@ -46,19 +40,19 @@ func main() {
 
 	// Routes 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello World")
-	})
+		fmt.Fprintf(w, "Welcome!")
+	}).Methods("GET")
 	// To handle new websocket connection 
-	h := handlers.NewSocketHandlers(&Upgrader, Clients, Broadcaster)
-	http.HandleFunc("/websocket", h.HandleConnections)
+	// h := handlers.NewSocketHandlers(clients, broadcaster)
+	r.HandleFunc("/ws", handlers.HandleConnection)
+	// r.HandleFunc("/ws", handlers.WsHandler)
 	// To handle messages through a subroutine 
-	s := services.NewSocketService(Broadcaster, Clients)
+	s := services.NewSocketService(broadcaster, clients)
 	go s.HandleMessages()
 
 	log.Printf("Server starting at :%v", port)
 	http.ListenAndServe(fmt.Sprintf(":%v", port), r)
 }
-
 
 func initiateRedisClient(url string) {
 	rdb = redis.NewClient(&redis.Options{

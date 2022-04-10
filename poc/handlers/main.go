@@ -7,19 +7,35 @@ import (
 
 	"github.com/gorilla/websocket"
 )
+var clients 	= make(map[*websocket.Conn]bool)
+var broadcaster = make(chan core.ChatMessage)
+// To "upgrade" incoming http requests to websocket reqs
+var upgrader 	= websocket.Upgrader{
+	ReadBufferSize: 1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool { return true },
+}
 
 type SocketHandlers struct {
-	upgrader *websocket.Upgrader
 	clients map[*websocket.Conn]bool // maps are reference type by default 
 	broadcaster chan core.ChatMessage // channels are reference type by default 
 }
 
 func NewSocketHandlers(
-		upgrader *websocket.Upgrader, 
 		clients map[*websocket.Conn]bool,
 		broadcaster chan core.ChatMessage,
 	) *SocketHandlers {
-	return &SocketHandlers{upgrader, clients, broadcaster}
+	return &SocketHandlers{clients, broadcaster}
+}
+
+func WsHandler(w http.ResponseWriter, r *http.Request) {
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+			log.Fatal(err)
+	}
+
+	// register client
+	clients[ws] = true	
 }
 
 /*
@@ -30,28 +46,29 @@ func NewSocketHandlers(
 
 */
 
-func (s *SocketHandlers) HandleConnections(w http.ResponseWriter, r *http.Request) {
+func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	// Create a new WS connection out of the incoming request
-	ws, err := s.upgrader.Upgrade(w,r,nil)
+	log.Println("Upgrading the request to ws request")
+	ws, err := upgrader.Upgrade(w,r,nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer ws.Close()
+	// defer ws.Close()
 	// Set the currect WS as true in the map
 	log.Println("Creating a map entry for the new connection")
-	s.clients[ws] = true 
+	clients[ws] = true 
 	// Send the message payload received with the WS connection 
 	for {
 		var chatMessage core.ChatMessage 
 		if err := ws.ReadJSON(&chatMessage); err != nil {
 			// Delete the current client from the map in case of an error 
-			delete(s.clients, ws)
+			delete(clients, ws)
 			break 
 		} else {
 			if chatMessage.Message != "" {
 				// Broadcast the message to the broadcast channel
 				log.Println("Broadcasting the message", chatMessage)
-				s.broadcaster <- chatMessage
+				broadcaster <- chatMessage
 			}
 		}
 
