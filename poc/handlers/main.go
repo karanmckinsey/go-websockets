@@ -15,10 +15,10 @@ type SocketHandlers struct {
 }
 
 func NewSocketHandlers(
-	upgrader *websocket.Upgrader, 
-	clients map[*websocket.Conn]bool,
-	broadcaster chan core.ChatMessage,
-) *SocketHandlers {
+		upgrader *websocket.Upgrader, 
+		clients map[*websocket.Conn]bool,
+		broadcaster chan core.ChatMessage,
+	) *SocketHandlers {
 	return &SocketHandlers{upgrader, clients, broadcaster}
 }
 
@@ -38,6 +38,7 @@ func (s *SocketHandlers) HandleConnections(w http.ResponseWriter, r *http.Reques
 	}
 	defer ws.Close()
 	// Set the currect WS as true in the map
+	log.Println("Creating a map entry for the new connection")
 	s.clients[ws] = true 
 	// Send the message payload received with the WS connection 
 	for {
@@ -47,9 +48,11 @@ func (s *SocketHandlers) HandleConnections(w http.ResponseWriter, r *http.Reques
 			delete(s.clients, ws)
 			break 
 		} else {
-			// Broadcast the message to the broadcast channel
-			log.Println("Broadcasting the message", chatMessage)
-			s.broadcaster <- chatMessage
+			if chatMessage.Message != "" {
+				// Broadcast the message to the broadcast channel
+				log.Println("Broadcasting the message", chatMessage)
+				s.broadcaster <- chatMessage
+			}
 		}
 
 	}
