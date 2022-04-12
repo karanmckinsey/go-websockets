@@ -49,6 +49,8 @@ func (s *SocketHandlers) NewConnectionHandler(w http.ResponseWriter, r *http.Req
 		if err := ws.ReadJSON(&payload); err != nil {
 			log.Println("Cannot read socket conection payload")
 			log.Println(err)
+			// Do return from function on error. If the function does not return,
+			// then the function will spin in a tight loop printing errors.
 			return
 		}
 		s.clientsMap[payload.Username] = core.ClientNodeType{
