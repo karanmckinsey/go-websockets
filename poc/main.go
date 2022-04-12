@@ -24,7 +24,7 @@ var ctx = context.Background()
 var clients = make(map[*websocket.Conn]bool)
 
 // Map for all clients (updated)
-var clientsMap core.ClientsMapType = make(map[*websocket.Conn]core.ClientNode)
+var clientsMap core.ClientsMapType = make(map[string]core.ClientNodeType)
 
 // Single channel to send and receive ChatMessage data
 var broadcaster = make(chan string) // communicates via username

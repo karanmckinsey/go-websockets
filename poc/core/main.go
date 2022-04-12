@@ -7,13 +7,18 @@ type ChatMessage struct {
 	Message  string `json:"message"`
 }
 
-type ClientNode struct {
-	Username string `json:"username"`
-	Active   bool   `json:"active"`
-}
-
 type NewSessionPayload struct {
 	Username string `json:"username"`
 }
 
-type ClientsMapType map[*websocket.Conn]ClientNode
+// type ClientNode struct {
+// 	Username string `json:"username"`
+// 	Active   bool   `json:"active"`
+// }
+// type ClientsMapType map[*websocket.Conn]ClientNode
+
+type ClientNodeType struct {
+	WebSocket *websocket.Conn `json:"-"`
+	Active    bool            `json:"active"`
+}
+type ClientsMapType map[string]ClientNodeType

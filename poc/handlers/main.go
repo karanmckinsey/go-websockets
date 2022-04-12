@@ -45,17 +45,16 @@ func (s *SocketHandlers) NewConnectionHandler(w http.ResponseWriter, r *http.Req
 	}
 	defer ws.Close()
 	for { // infinite loop
-		log.Println("Checking to see if this repeats")
 		var payload core.NewSessionPayload
 		if err := ws.ReadJSON(&payload); err != nil {
 			log.Println("Cannot read socket conection payload")
-			log.Fatal(err)
+			log.Println(err)
+			return
 		}
-		s.clientsMap[ws] = core.ClientNode{
-			Active:   true,
-			Username: payload.Username,
+		s.clientsMap[payload.Username] = core.ClientNodeType{
+			Active:    true,
+			WebSocket: ws,
 		}
-		// broadcast the latest users list to all the users
 		s.broadcaster <- payload.Username
 	}
 }
@@ -80,21 +79,21 @@ func (s *SocketHandlers) messageClients(username string) {
 		log.Printf("New user = %v has come, broadcasting!", username)
 	}
 	type node struct {
-		Username string          `json:"username"`
-		Socket   *websocket.Conn `json:"Socket"`
+		Username string `json:"username"`
+		Active   bool   `json:"active"`
 	}
 	// list of active users (this list will be sent to all ws connections)
 	var activeUsers []node
-	for ws, client := range s.clientsMap {
+	for uname, each := range s.clientsMap {
 		n := node{
-			Username: client.Username,
-			Socket:   ws,
+			Username: uname,
+			Active:   each.Active,
 		}
 		activeUsers = append(activeUsers, n)
 	}
 	// sending each user in the map with the latest list of active users
-	for ws, _ := range s.clientsMap {
-		if err := ws.WriteJSON(activeUsers); err != nil {
+	for _, each := range s.clientsMap {
+		if err := each.WebSocket.WriteJSON(activeUsers); err != nil {
 			log.Printf("Error")
 		}
 	}
