@@ -1,51 +1,60 @@
 import React from 'react';
+import MessageScreen from './MessageScreen';
+import JoinScreen from './JoinScreen';
+
+const SCREENS = Object.freeze({
+	JOIN: "join",
+	MESSAGE: "message"
+});
 
 const App = () => {
 	
-	const [ state, setState ] = React.useState({
-		username: "",
-		message: "",
-	});
+	const [socket, setSocket] = React.useState(null);
+	const [screen, setScreen] = React.useState(SCREENS.JOIN);
+	const [users, setUsers] = React.useState([]);
+	const [messages, setMessages] = React.useState([]);
 
-	const submitHandler = (e) => {
-		e.preventDefault();
-		createSocketConnection();
+	React.useEffect(() => {
+		const ws = new WebSocket("ws://127.0.0.1:8000/ws");
+		setSocket(ws);
+	}, []);
+
+	React.useEffect(() => {
+		if (!socket) return;
+		socket.addEventListener("message", ({data}) => {
+			const { message, users: _users } = JSON.parse(data);
+			if (_users && _users.length) {
+				setUsers(_users);
+			}
+			console.log({ message })
+			setMessages([...messages, message]);
+		})
+	}, [socket]);
+
+	const renderScreen = () => {
+		switch (screen) {
+			case SCREENS.MESSAGE:
+				return <MessageScreen 
+					users={users}
+					onSend={(username, message) => {
+						socket.send(JSON.stringify({ username, type: "direct", message }));
+					}}
+				/>;
+			default:
+				return <JoinScreen onJoin={(username) => {
+					socket.send(JSON.stringify({ username, type: "broadcast" }));
+					setScreen(SCREENS.MESSAGE);
+				}}/>
+		}
 	}
 
-
-	const createSocketConnection = () => {
-		const ws = new WebSocket("ws://127.0.0.1:8000/ws")
-		console.log({ ws })
-		// ws.send({ ...state })
-	}
-
-
-	return (
-		<div className="container my-5 py-5">
-			<h3>Go Chat!</h3>
-			<form id="input-form" className=" my-4" onSubmit={submitHandler}>
-				<div className="form-group">
-					<input
-						type="text"
-						className="form-control"
-						placeholder="Enter username"
-						value={state.username}
-						onChange={(e) => setState(old => ({ ...old, username: e.target.value }))}
-					/>
-				</div>
-				<div className="form-group">
-					<input
-						type="text"
-						className="form-control"
-						placeholder="Enter chat text here"
-						value={state.message}
-						onChange={(e) => setState(old => ({ ...old, message: e.target.value }))}
-					/>
-				</div>
-				<button className="btn btn-primary btn-block" type="submit">Send</button>
-	  		 </form>
-  		 </div>
-	)
+	return <div className="container">
+		{renderScreen()}
+		<h5>Messages</h5>
+		<ul>
+		{messages.length > 0 && messages.map(m => <li key={m}>{m}</li>)}
+		</ul>
+	</div>
 }
 
 export default App;

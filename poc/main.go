@@ -27,7 +27,7 @@ var clients = make(map[*websocket.Conn]bool)
 var clientsMap core.ClientsMapType = make(map[string]core.ClientNodeType)
 
 // Single channel to send and receive ChatMessage data
-var broadcaster = make(chan string) // communicates via username
+var broadcaster = make(chan core.Payload) // communicates via Payload structure
 
 func main() {
 	// environment variables config

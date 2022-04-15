@@ -10,7 +10,7 @@ import (
 
 type SocketHandlers struct {
 	clients     map[*websocket.Conn]bool // maps are reference type by default
-	broadcaster chan string              // channels are reference type by default
+	broadcaster chan core.Payload        // channels are reference type by default
 	clientsMap  core.ClientsMapType
 }
 
@@ -23,7 +23,7 @@ var upgrader = websocket.Upgrader{
 
 func NewSocketHandlers(
 	clients map[*websocket.Conn]bool,
-	broadcaster chan string,
+	broadcaster chan core.Payload,
 	clientsMap core.ClientsMapType,
 ) *SocketHandlers {
 	return &SocketHandlers{clients, broadcaster, clientsMap}
@@ -45,7 +45,7 @@ func (s *SocketHandlers) NewConnectionHandler(w http.ResponseWriter, r *http.Req
 	}
 	defer ws.Close()
 	for { // infinite loop
-		var payload core.NewSessionPayload
+		var payload core.Payload
 		if err := ws.ReadJSON(&payload); err != nil {
 			log.Println("Cannot read socket conection payload")
 			log.Println(err)
@@ -53,11 +53,14 @@ func (s *SocketHandlers) NewConnectionHandler(w http.ResponseWriter, r *http.Req
 			// then the function will spin in a tight loop printing errors.
 			return
 		}
-		s.clientsMap[payload.Username] = core.ClientNodeType{
-			Active:    true,
-			WebSocket: ws,
+		if payload.Type == "broadcast" {
+			// assign new user to the map only if the payload type is broadcast (means new user)
+			s.clientsMap[payload.Username] = core.ClientNodeType{
+				Active:    true,
+				WebSocket: ws,
+			}
 		}
-		s.broadcaster <- payload.Username
+		s.broadcaster <- payload
 	}
 }
 
@@ -70,70 +73,54 @@ func safeError(err error) bool {
 func (s *SocketHandlers) HandleBroadcasts() {
 	for {
 		// pick up the username for the new joined user
-		username := <-s.broadcaster
-		s.messageClients(username)
+		payload := <-s.broadcaster
+		s.messageClients(payload)
 	}
 }
 
 // helper method
-func (s *SocketHandlers) messageClients(username string) {
-	if username != "" {
-		log.Printf("New user = %v has come, broadcasting!", username)
+func (s *SocketHandlers) messageClients(payload core.Payload) {
+	if payload.Username != "" {
+		log.Printf("New user = %v has come, broadcasting!", payload.Username)
 	}
 	type node struct {
 		Username string `json:"username"`
 		Active   bool   `json:"active"`
 	}
-	// list of active users (this list will be sent to all ws connections)
-	var activeUsers []node
-	for uname, each := range s.clientsMap {
-		n := node{
-			Username: uname,
-			Active:   each.Active,
+
+	switch payload.Type {
+	case "direct":
+		// find the user from the map with the username
+		u, ok := s.clientsMap[payload.Username]
+		res := core.ClientResponse{
+			Message: payload.Message,
+			Type:    "direct",
 		}
-		activeUsers = append(activeUsers, n)
-	}
-	// sending each user in the map with the latest list of active users
-	for _, each := range s.clientsMap {
-		if err := each.WebSocket.WriteJSON(activeUsers); err != nil {
-			log.Printf("Error")
+		if ok {
+			// send the message to that user
+			log.Println("Sending direct message to the user", payload.Username)
+			if err := u.WebSocket.WriteJSON(res); err != nil {
+				log.Println("Error will writing direct message", err)
+				return
+			}
+		}
+
+	case "broadcast":
+		// list of active users (this list will be sent to all ws connections)
+		var activeUsers []string
+		for uname, _ := range s.clientsMap {
+			activeUsers = append(activeUsers, uname)
+		}
+		res := core.ClientResponse{
+			Type:  "broadcast",
+			Users: activeUsers,
+		}
+		// sending each user in the map with the latest list of active users
+		for _, each := range s.clientsMap {
+			if err := each.WebSocket.WriteJSON(res); err != nil {
+				log.Println("Error", err)
+				return
+			}
 		}
 	}
 }
-
-/*
-	Whenever the users makes a new connection:
-	- They should be set up to receive messages from other clients.
-	- They should be able to send their own messages.
-	- They should receive a full history of the previous chat (backed by Redis).
-
-*/
-// NOT TO BE USED ANYMORE
-// func (s *SocketHandlers) HandleConnection(w http.ResponseWriter, r *http.Request) {
-// 	// Create a new WS connection out of the incoming request
-// 	log.Println("Upgrading the request to ws request")
-// 	ws, err := upgrader.Upgrade(w, r, nil)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	// defer ws.Close()
-// 	// Set the currect WS as true in the map
-// 	log.Println("Creating a map entry for the new connection")
-// 	s.clients[ws] = true
-// 	// Send the message payload received with the WS connection
-// 	for {
-// 		var chatMessage core.ChatMessage
-// 		if err := ws.ReadJSON(&chatMessage); err != nil {
-// 			// Delete the current client from the map in case of an error
-// 			delete(s.clients, ws)
-// 			break
-// 		} else {
-// 			if chatMessage.Message != "" {
-// 				// Broadcast the message to the broadcast channel
-// 				log.Println("Broadcasting the message", chatMessage)
-// 				s.broadcaster <- chatMessage
-// 			}
-// 		}
-
-// 	}
-// }
